@@ -1,0 +1,1346 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EESISP Remittance Calculator</title>
+<style>
+  :root{
+    --bg:#12161c;
+    --panel:#1a212b;
+    --panel2:#212a36;
+    --line:#2c3746;
+    --ink:#e6edf5;
+    --muted:#8b9bad;
+    --accent:#3ea6ff;
+    --good:#5bd17a;
+    --warn:#f5a524;
+    --danger:#ff6b6b;
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --cond:"Arial Narrow","Helvetica Neue Condensed",Roboto Condensed,var(--sans);
+    --mono:"Consolas","SF Mono",Menlo,"DejaVu Sans Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 120px}
+
+  /* ---------- header ---------- */
+  .top{
+    display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;
+    justify-content:space-between;padding-bottom:14px;
+    border-bottom:1px solid var(--line);margin-bottom:20px;
+  }
+  .brandline{font-family:var(--cond);text-transform:uppercase;letter-spacing:.14em;
+    font-size:11px;color:var(--accent);margin:0 0 2px}
+  h1{font-family:var(--cond);text-transform:uppercase;letter-spacing:.06em;
+    font-size:27px;font-weight:700;margin:0}
+  .periodwrap{display:flex;align-items:center;gap:8px}
+  .periodwrap label{font-family:var(--cond);text-transform:uppercase;letter-spacing:.12em;
+    font-size:11px;color:var(--muted)}
+  #period{
+    background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    border-radius:6px;padding:7px 10px;font:inherit;font-size:14px;width:190px;
+  }
+  .status{font-size:11.5px;color:var(--muted);font-family:var(--cond);
+    letter-spacing:.1em;text-transform:uppercase;margin-top:6px;text-align:right}
+  .status b{color:var(--good);font-weight:600}
+  .status.warnstate b{color:var(--warn)}
+
+  /* ---------- layout ---------- */
+  .cols{display:grid;grid-template-columns:1fr 336px;gap:22px;align-items:start}
+  .cols>*{min-width:0}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr} }
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    margin-bottom:20px;overflow:hidden}
+  .cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:13px 15px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .cardhead h2{font-family:var(--cond);text-transform:uppercase;letter-spacing:.13em;
+    font-size:12.5px;font-weight:700;margin:0;color:var(--ink)}
+  .cardhead .sub{font-size:11.5px;color:var(--muted)}
+
+  /* ---------- buttons ---------- */
+  button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);padding:7px 12px;font-size:13px;
+    transition:border-color .12s,background .12s}
+  button:hover{border-color:var(--accent)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn-accent{background:var(--accent);border-color:var(--accent);color:#08121c;font-weight:600}
+  .btn-accent:hover{filter:brightness(1.1)}
+  .btn-sm{padding:5px 9px;font-size:12px}
+  .btn-ghost{background:transparent}
+  .iconbtn{background:transparent;border:none;color:var(--muted);padding:4px 6px;
+    font-size:15px;line-height:1;border-radius:5px}
+  .iconbtn:hover{color:var(--ink);background:var(--panel2)}
+  .iconbtn.del:hover{color:var(--danger)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+
+  /* ---------- employee table ---------- */
+  table{width:100%;border-collapse:collapse}
+  thead th{
+    font-family:var(--cond);text-transform:uppercase;letter-spacing:.11em;font-size:10.5px;
+    color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;
+    border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel2)
+  }
+  thead th.num{text-align:right}
+  tbody td{padding:5px 8px;border-bottom:1px solid rgba(44,55,70,.55);vertical-align:middle}
+  tbody tr.inactive{opacity:.42}
+  tbody tr:hover{background:rgba(62,166,255,.05)}
+  .cellinput{
+    width:100%;background:transparent;border:1px solid transparent;color:var(--ink);
+    font:inherit;font-size:14px;padding:6px 7px;border-radius:5px
+  }
+  .cellinput:hover{border-color:var(--line)}
+  .cellinput:focus{outline:none;border-color:var(--accent);background:#0e1319}
+  input.money{font-family:var(--mono);font-size:13.5px;text-align:right;
+    font-variant-numeric:tabular-nums}
+  select.cellinput{
+    -webkit-appearance:none;appearance:none;cursor:pointer;
+    background:var(--panel2);border-color:var(--line);padding-right:22px;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+                     linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 13px) calc(50% + 1px),calc(100% - 8px) calc(50% + 1px);
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat
+  }
+  select.cellinput:focus{border-color:var(--accent)}
+  td.actions{text-align:right;white-space:nowrap;width:1%}
+  .code-chip{font-family:var(--mono);font-size:11px;color:var(--muted);
+    border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+  .empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13.5px}
+
+  /* ---------- rates ---------- */
+  .rates{padding:4px 6px 8px}
+  .raterow{display:grid;grid-template-columns:1fr 62px 92px;gap:10px;align-items:center;
+    padding:8px 9px;border-bottom:1px solid rgba(44,55,70,.55)}
+  .raterow:last-child{border-bottom:none}
+  .raterow .rname{font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;
+    font-size:12.5px;font-weight:600}
+  .raterow .rname small{display:block;font-family:var(--sans);text-transform:none;
+    letter-spacing:0;color:var(--muted);font-size:11px;font-weight:400}
+  .pctwrap{position:relative}
+  .pctwrap input{
+    width:100%;background:#0e1319;border:1px solid var(--line);color:var(--ink);
+    border-radius:6px;padding:7px 22px 7px 8px;font-family:var(--mono);font-size:13.5px;
+    text-align:right
+  }
+  .pctwrap input:focus{outline:none;border-color:var(--accent)}
+  .pctwrap span{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    color:var(--muted);font-size:12px;pointer-events:none}
+  .codeinput{
+    width:100%;background:#0e1319;border:1px solid var(--line);color:var(--muted);
+    border-radius:6px;padding:7px 8px;font-family:var(--mono);font-size:12.5px;text-align:center
+  }
+  .codeinput:focus{outline:none;border-color:var(--accent);color:var(--ink)}
+
+  /* ---------- remittance slip (signature) ---------- */
+  .slip{position:sticky;top:16px}
+  .slipinner{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    position:relative;overflow:hidden}
+  .perf{height:9px;background-color:var(--panel);
+    background-image:radial-gradient(circle at 6px 4px,var(--bg) 4.2px,transparent 4.6px);
+    background-size:14px 9px}
+  .perf.bottom{background-image:radial-gradient(circle at 6px 5px,var(--bg) 4.2px,transparent 4.6px)}
+  .sliphead{padding:6px 16px 12px;border-bottom:1px dashed var(--line)}
+  .sliphead h2{font-family:var(--cond);text-transform:uppercase;letter-spacing:.16em;
+    font-size:11px;color:var(--accent);margin:0;font-weight:700}
+  .sliphead .who{font-size:12px;color:var(--muted);margin-top:2px}
+  .sliplines{padding:10px 16px}
+  .sline{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline;
+    padding:6px 0;font-size:13px}
+  .sline .lbl{color:var(--muted);display:flex;align-items:baseline;gap:6px;min-width:0}
+  .sline .lbl b{color:var(--ink);font-weight:600;font-family:var(--cond);
+    text-transform:uppercase;letter-spacing:.08em;font-size:12.5px}
+  .sline .lbl em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    border:1px solid var(--line);border-radius:3px;padding:0 4px}
+  .sline .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px}
+  .sline .tiny{display:block;font-size:10.5px;color:var(--muted);font-family:var(--mono);
+    text-align:right;margin-top:1px}
+  .sline.zero .amt{color:var(--muted)}
+  .slipdiv{border-top:1px dashed var(--line);margin:8px 0}
+  .subtotal{display:grid;grid-template-columns:1fr auto;padding:7px 0;font-size:13px}
+  .subtotal .lbl{font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;
+    color:var(--muted);font-size:11.5px}
+  .subtotal .amt{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .addrow{display:grid;grid-template-columns:1fr 108px;gap:8px;align-items:center;padding:5px 0}
+  .addrow label{font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;
+    font-size:12px;font-weight:600}
+  .addrow input{
+    background:#0e1319;border:1px solid var(--warn);border-radius:6px;color:var(--ink);
+    padding:7px 8px;font-family:var(--mono);font-size:13.5px;text-align:right;width:100%
+  }
+  .addrow input:focus{outline:none;border-color:var(--accent)}
+  .grand{padding:14px 16px;border-top:1px solid var(--line);background:var(--panel2)}
+  .grand .cap{font-family:var(--cond);text-transform:uppercase;letter-spacing:.16em;
+    font-size:10.5px;color:var(--muted)}
+  .grand .val{font-family:var(--mono);font-size:29px;font-weight:600;color:var(--good);
+    letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.18;
+    word-break:break-all}
+  .btn-danger{background:var(--danger);border-color:var(--danger);color:#1a0606;font-weight:600}
+  .btn-danger:hover{filter:brightness(1.08);border-color:var(--danger)}
+  .raterow.jibrow{border-top:1px solid var(--line);margin-top:4px;padding-top:12px}
+  .raterow.jibrow .rname{color:var(--warn)}
+  .slipfoot{display:flex;gap:8px;padding:11px 16px;border-top:1px solid var(--line);
+    flex-wrap:wrap}
+  .slipfoot button{flex:1;min-width:96px}
+
+  /* ---------- notes / history ---------- */
+  .note{display:flex;gap:10px;align-items:flex-start;margin:0 15px 13px;padding:10px 12px;
+    background:rgba(245,165,36,.09);border:1px solid rgba(245,165,36,.35);
+    border-radius:7px;font-size:12.5px;color:#f0dcb6}
+  .note button{margin-left:auto;flex:none}
+  details.hist{margin-top:4px}
+  details.hist summary{cursor:pointer;padding:12px 15px;font-family:var(--cond);
+    text-transform:uppercase;letter-spacing:.13em;font-size:12px;color:var(--muted)}
+  details.hist summary:hover{color:var(--ink)}
+  .histrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;
+    padding:9px 15px;border-top:1px solid rgba(44,55,70,.55);font-size:13px}
+  .histrow .hname{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .histrow .hdate{font-size:11px;color:var(--muted)}
+  .histrow .hamt{font-family:var(--mono);color:var(--good);font-variant-numeric:tabular-nums}
+
+  .mobilebar{display:none}
+  @media (max-width:900px){
+    .slip{position:static}
+    .mobilebar{
+      display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
+      justify-content:space-between;align-items:center;gap:12px;
+      padding:11px 16px calc(11px + env(safe-area-inset-bottom));
+      background:var(--panel2);border-top:1px solid var(--line)
+    }
+    .mobilebar .cap{font-family:var(--cond);text-transform:uppercase;letter-spacing:.14em;
+      font-size:10px;color:var(--muted)}
+    .mobilebar .val{font-family:var(--mono);font-size:21px;color:var(--good);font-weight:600;
+      font-variant-numeric:tabular-nums}
+    .wrap{padding-bottom:96px}
+    thead th.hide-s,tbody td.hide-s{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  /* ---------- import dialog ---------- */
+  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;
+    justify-content:center;padding:16px;background:rgba(6,9,13,.72)}
+  .modal[hidden]{display:none}
+  .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+  .modalhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    padding:15px 17px;border-bottom:1px solid var(--line)}
+  .modalhead h2{font-family:var(--cond);text-transform:uppercase;letter-spacing:.13em;
+    font-size:13px;margin:0 0 3px}
+  .modalhead p{margin:0;font-size:12.5px;color:var(--muted);max-width:56ch}
+  .modalbody{padding:15px 17px;overflow:auto;flex:1}
+  .modalfoot{display:flex;gap:9px;justify-content:flex-end;align-items:center;
+    padding:12px 17px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .modalfoot .spacer{flex:1;min-width:0}
+  #pasteBox{width:100%;min-height:112px;background:#0e1319;border:1px dashed var(--accent);
+    border-radius:8px;color:var(--ink);font-family:var(--mono);font-size:12.5px;
+    padding:11px 12px;resize:vertical;white-space:pre;overflow:auto}
+  #pasteBox:focus{outline:none;border-style:solid}
+  #pasteBox::placeholder{color:var(--muted);font-family:var(--sans);white-space:pre-line}
+  .maprow{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:14px 0 4px;
+    font-size:12.5px;color:var(--muted)}
+  .maprow label{display:flex;align-items:center;gap:6px}
+  .maprow select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:5px;padding:5px 7px;font:inherit;font-size:12.5px}
+  .maprow select:focus{outline:none;border-color:var(--accent)}
+  .previewwrap{margin-top:12px;border:1px solid var(--line);border-radius:8px;overflow:auto;
+    max-height:44vh}
+  .previewwrap table{font-size:13px}
+  .previewwrap thead th{position:sticky;top:0;z-index:1}
+  .previewwrap td{padding:5px 9px}
+  .previewwrap td.pname{font-size:13px}
+  .previewwrap td.pnum{font-family:var(--mono);font-size:12.5px;text-align:right;
+    font-variant-numeric:tabular-nums}
+  .previewwrap select{width:100%;background:var(--panel2);border:1px solid var(--line);
+    color:var(--ink);border-radius:5px;padding:5px 6px;font:inherit;font-size:12.5px}
+  .previewwrap select:focus{outline:none;border-color:var(--accent)}
+  .pill{font-family:var(--cond);text-transform:uppercase;letter-spacing:.09em;font-size:10px;
+    padding:2px 6px;border-radius:3px;border:1px solid;white-space:nowrap}
+  .pill.ok{color:var(--good);border-color:rgba(91,209,122,.45)}
+  .pill.add{color:var(--accent);border-color:rgba(62,166,255,.45)}
+  .pill.skip{color:var(--muted);border-color:var(--line)}
+  .checkline{display:flex;align-items:flex-start;gap:8px;margin-top:13px;font-size:12.5px;
+    color:var(--muted);cursor:pointer}
+  .checkline input{margin-top:2px;accent-color:var(--accent);width:15px;height:15px;flex:none}
+  .parsemsg{margin-top:11px;font-size:12.5px;color:var(--warn)}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:80;
+    background:var(--panel2);border:1px solid var(--accent);border-radius:8px;
+    padding:10px 16px;font-size:13px;box-shadow:0 8px 26px rgba(0,0,0,.5);max-width:90vw}
+  .toast[hidden]{display:none}
+  @media (max-width:900px){ .toast{bottom:88px} }
+
+  @media print{
+    .modal,.toast{display:none!important}
+    :root{--bg:#fff;--panel:#fff;--panel2:#fff;--line:#bbb;--ink:#000;--muted:#555;
+      --accent:#000;--good:#000}
+    body{background:#fff;color:#000;font-size:11pt}
+    .toolbar,.slipfoot,.mobilebar,.note,details.hist,td.actions,thead th.actions,
+    .iconbtn,.status{display:none!important}
+    .card,.slipinner{border:1px solid #999;break-inside:avoid}
+    .cols{grid-template-columns:1fr 300px}
+    .perf{display:none}
+    .cellinput,.pctwrap input,.codeinput,.addrow input,#period{
+      border-color:transparent!important;background:#fff!important;color:#000!important}
+    select.cellinput{background-image:none!important;padding-right:7px}
+    .grand .val{color:#000;font-size:22pt}
+  }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <p class="brandline">American Power Electrical Supply</p>
+      <h1>EESISP Remittance</h1>
+    </div>
+    <div>
+      <div class="periodwrap">
+        <label for="period">Pay period</label>
+        <input id="period" type="text" placeholder="e.g. Week ending 12/18/25">
+      </div>
+      <div class="status" id="status">&nbsp;</div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <!-- EMPLOYEES -->
+      <section class="card">
+        <div class="cardhead">
+          <h2>Employees</h2>
+          <div class="toolbar">
+            <button class="btn-sm" id="importBtn">Paste from Excel</button>
+            <button class="btn-sm btn-accent" id="addBtn">+ Add employee</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table id="empTable">
+            <thead>
+              <tr>
+                <th style="min-width:160px">Employee</th>
+                <th style="min-width:126px">Role</th>
+                <th class="num" style="min-width:104px">Gross wages</th>
+                <th class="num" style="min-width:104px">Deductions</th>
+                <th class="num hide-s" style="min-width:104px">TGW</th>
+                <th class="actions"></th>
+              </tr>
+            </thead>
+            <tbody id="empBody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="empEmpty" hidden>No employees yet. Add your first one above.</div>
+      </section>
+
+      <!-- RATES -->
+      <section class="card">
+        <div class="cardhead">
+          <h2>Classifications &amp; premium rates</h2>
+          <span class="sub">Edit a rate here and every calculation updates.</span>
+        </div>
+        <div class="rates" id="rateList"></div>
+      </section>
+
+      <!-- HISTORY -->
+      <section class="card">
+        <details class="hist" id="histWrap">
+          <summary>Saved periods (<span id="histCount">0</span>)</summary>
+          <div id="histList"></div>
+        </details>
+      </section>
+    </div>
+
+    <!-- SLIP -->
+    <aside class="slip">
+      <div class="slipinner">
+        <div class="perf"></div>
+        <div class="sliphead">
+          <h2>Amount due</h2>
+          <div class="who" id="slipPeriod">No period entered</div>
+        </div>
+        <div class="sliplines">
+          <div id="slipClasses"></div>
+          <div class="slipdiv"></div>
+          <div class="sline" id="jibLine">
+            <span class="lbl"><b>JIB</b><em id="jibPctTag">29%</em></span>
+            <span class="amt" id="jibAmt">$0.00<span class="tiny" id="jibBasis"></span></span>
+          </div>
+          <div class="addrow">
+            <label for="k401">401K C&amp;L</label>
+            <input id="k401" type="text" inputmode="decimal" value="0.00">
+          </div>
+        </div>
+        <div class="grand">
+          <div class="cap">JIB + 401K C&amp;L</div>
+          <div class="val" id="grandJib">$0.00</div>
+        </div>
+        <div class="slipfoot">
+          <button id="printBtn">Print</button>
+          <button id="csvBtn">Export CSV</button>
+          <button id="saveBtn" class="btn-accent">Save period</button>
+          <button id="clearBtn" class="btn-ghost btn-sm">Clear amounts</button>
+          <button id="backupBtn" class="btn-ghost btn-sm">Backup</button>
+          <button id="restoreBtn" class="btn-ghost btn-sm">Restore</button>
+        </div>
+        <div class="perf bottom"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="modal" id="importModal" hidden>
+  <div class="modalbox" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <div class="modalhead">
+      <div>
+        <h2 id="importTitle">Paste from Excel</h2>
+        <p>Select the rows in your spreadsheet, copy them, and paste into the box below.
+           Headers are fine. Names get matched to the people already here.</p>
+      </div>
+      <button class="iconbtn" id="importClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modalbody">
+      <textarea id="pasteBox" spellcheck="false" placeholder="Paste here (Ctrl+V / ⌘V)
+
+Anichino, Jonathan P	1842.50	63.20
+Dillon, Patrick	1420.00	22.50"></textarea>
+
+      <div class="maprow" id="mapRow" hidden>
+        <label>Name <select id="colName"></select></label>
+        <label>Gross wages <select id="colWages"></select></label>
+        <label>Deductions <select id="colDeds"></select></label>
+        <label>Role <select id="colRole"></select></label>
+        <label style="cursor:pointer"><input type="checkbox" id="hasHeader"
+          style="accent-color:var(--accent);width:15px;height:15px"> First row is a header</label>
+      </div>
+
+      <div id="parseMsg" class="parsemsg" hidden></div>
+
+      <div class="previewwrap" id="previewWrap" hidden>
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:150px">From your spreadsheet</th>
+              <th class="num" style="min-width:92px">Gross wages</th>
+              <th class="num" style="min-width:92px">Deductions</th>
+              <th style="min-width:172px">Applies to</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+
+      <label class="checkline" id="zeroLine" hidden>
+        <input type="checkbox" id="zeroRest">
+        <span>Set wages and deductions to 0.00 for anyone not in this paste
+              — use it when the spreadsheet is the whole payroll for the period.</span>
+      </label>
+    </div>
+    <div class="modalfoot">
+      <span class="spacer" id="importSummary" style="font-size:12.5px;color:var(--muted)"></span>
+      <button id="importCancel">Cancel</button>
+      <button id="importApply" class="btn-accent" disabled>Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="confirmModal" hidden>
+  <div class="modalbox" style="width:min(440px,100%)" role="alertdialog"
+       aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modalhead">
+      <div>
+        <h2 id="confirmTitle">Confirm</h2>
+        <p id="confirmBody"></p>
+      </div>
+    </div>
+    <div class="modalfoot">
+      <span class="spacer"></span>
+      <button id="confirmNo">Cancel</button>
+      <button id="confirmYes" class="btn-accent">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<div class="mobilebar">
+  <div><div class="cap">JIB + 401K C&amp;L</div><div class="val" id="grandJibM">$0.00</div></div>
+  <button class="btn-accent" id="saveBtnM">Save period</button>
+</div>
+
+<script>
+"use strict";
+
+/* ============================ state ============================ */
+const KEY = "eesisp-calc-v1";
+
+const DEFAULT_ROLES = [
+  { id:"SALES",     name:"Sales",     code:"", pct:0 },
+  { id:"DRIVERS",   name:"Drivers",   code:"", pct:0 },
+  { id:"WAREHOUSE", name:"Warehouse", code:"", pct:0 },
+  { id:"ADMIN",     name:"Admin",     code:"", pct:0 }
+];
+
+const SEED_EMPLOYEES = [];
+
+let state = null;
+
+function freshState(){
+  return {
+    period: "",
+    roles: DEFAULT_ROLES.map(r => ({...r})),
+    employees: SEED_EMPLOYEES.map(([name, role], i) => ({
+      id: "e" + (i+1) + "-" + Math.random().toString(36).slice(2,7),
+      name, role, wages: 0, deds: 0, active: true
+    })),
+    jib: 0,
+    k401: 0,
+    jibPct: 0,
+    history: [],
+  };
+}
+
+/* ============================ helpers ============================ */
+const $ = s => document.querySelector(s);
+const money = n => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US",
+  { minimumFractionDigits:2, maximumFractionDigits:2 });
+const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+
+function num(v){
+  if (typeof v === "number") return isFinite(v) ? v : 0;
+  const raw = String(v == null ? "" : v).trim();
+  const neg = /^\(.*\)$/.test(raw);            // (500) is accounting for -500
+  const cleaned = raw.replace(/[^0-9.\-]/g, "");
+  const parts = cleaned.split(".");
+  const joined = parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : cleaned;
+  let n = parseFloat(joined);
+  if (!isFinite(n)) return 0;
+  return neg ? -Math.abs(n) : n;
+}
+const fix2 = n => num(n).toFixed(2);
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function roleById(id){
+  return state.roles.find(r => r.id === id) || state.roles[0];
+}
+function newId(){ return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ============================ persistence ============================ */
+let saveTimer = null;
+function queueSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persist, 400);
+}
+function persist(){
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    setStatus("Saved " + new Date().toLocaleTimeString("en-US",
+      { hour:"numeric", minute:"2-digit" }));
+  } catch (err) {
+    setStatus("Not saved — use Backup", true);
+  }
+}
+function restore(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (err) { /* first run */ }
+  return null;
+}
+function setStatus(msg, warn){
+  const el = $("#status");
+  el.innerHTML = "<b>" + esc(msg) + "</b>";
+  el.classList.toggle("warnstate", !!warn);
+}
+
+/* ============================ math ============================ */
+function compute(){
+  const byRole = {};
+  state.roles.forEach(r => {
+    byRole[r.id] = { role:r, count:0, wages:0, deds:0, tgw:0, owed:0 };
+  });
+  let grossAll = 0;
+  state.employees.forEach(e => {
+    if (!e.active) return;
+    const b = byRole[e.role] || byRole[state.roles[0].id];
+    b.count++;
+    b.wages += num(e.wages);
+    b.deds  += num(e.deds);
+    grossAll += num(e.wages);
+  });
+  let premiums = 0;
+  Object.values(byRole).forEach(b => {
+    b.tgw  = round2(b.wages - b.deds);
+    b.owed = round2(b.tgw * (num(b.role.pct) / 100));
+    premiums += b.owed;
+  });
+  premiums = round2(premiums);
+  grossAll = round2(grossAll);
+  const jibPct = num(state.jibPct);
+  const jib  = round2(grossAll * (jibPct / 100));
+  const k401 = round2(num(state.k401));
+  const jibTotal = round2(jib + k401);
+  return { byRole, grossAll, premiums, jibPct, jib, k401, jibTotal };
+}
+
+/* ============================ render: employees ============================ */
+function renderEmployees(){
+  const body = $("#empBody");
+  body.innerHTML = "";
+  state.employees.forEach(e => {
+    const tr = document.createElement("tr");
+    tr.className = e.active ? "" : "inactive";
+    tr.dataset.id = e.id;
+    const opts = state.roles.map(r =>
+      '<option value="' + r.id + '"' + (r.id === e.role ? " selected" : "") + ">" +
+      esc(r.name) + "</option>").join("");
+    tr.innerHTML =
+      '<td><input class="cellinput" data-f="name" value="' + esc(e.name) +
+        '" placeholder="Last, First"></td>' +
+      '<td><select class="cellinput" data-f="role">' + opts + "</select></td>" +
+      '<td><input class="cellinput money" data-f="wages" inputmode="decimal" value="' +
+        fix2(e.wages) + '"></td>' +
+      '<td><input class="cellinput money" data-f="deds" inputmode="decimal" value="' +
+        fix2(e.deds) + '"></td>' +
+      '<td class="num hide-s" style="text-align:right;font-family:var(--mono);' +
+        'font-size:13px;color:var(--muted)" data-tgw>' +
+        money(round2(num(e.wages) - num(e.deds))) + "</td>" +
+      '<td class="actions">' +
+        '<button class="iconbtn" data-act="toggle" title="' +
+          (e.active ? "Set inactive (keeps the record, drops them from the total)"
+                    : "Set active") + '">' + (e.active ? "◉" : "○") + "</button>" +
+        '<button class="iconbtn del" data-act="del" title="Remove employee">✕</button>' +
+      "</td>";
+    body.appendChild(tr);
+  });
+  $("#empEmpty").hidden = state.employees.length > 0;
+}
+
+$("#empBody").addEventListener("input", ev => {
+  const t = ev.target;
+  const f = t.dataset.f;
+  if (!f) return;
+  const tr = t.closest("tr");
+  const e = state.employees.find(x => x.id === tr.dataset.id);
+  if (!e) return;
+  if (f === "name") e.name = t.value;
+  else if (f === "role") e.role = t.value;
+  else e[f] = num(t.value);
+  const tgwCell = tr.querySelector("[data-tgw]");
+  if (tgwCell) tgwCell.textContent = money(round2(num(e.wages) - num(e.deds)));
+  renderSlip();
+  queueSave();
+});
+
+$("#empBody").addEventListener("blur", ev => {
+  const t = ev.target;
+  if (!t.dataset) return;
+  if (t.dataset.f === "wages" || t.dataset.f === "deds"){
+    t.value = fix2(t.value);
+    return;
+  }
+  if (t.dataset.f !== "name") return;
+
+  const before = orderKey();
+  sortEmployees();
+  if (orderKey() === before) return;   // already in the right place
+
+  // a rebuild would drop whatever the person tabbed to, so put it back
+  const next = ev.relatedTarget;
+  let nextId = null, nextField = null;
+  if (next && next.dataset && next.dataset.f){
+    const row = next.closest("tr");
+    if (row){ nextId = row.dataset.id; nextField = next.dataset.f; }
+  }
+  renderEmployees(); renderRates(); renderSlip(); queueSave();
+  if (nextId){
+    const row = $("#empBody").querySelector('tr[data-id="' + nextId + '"]');
+    const field = row && row.querySelector('[data-f="' + nextField + '"]');
+    if (field) field.focus();
+  }
+}, true);
+
+$("#empBody").addEventListener("click", async ev => {
+  const btn = ev.target.closest("button[data-act]");
+  if (!btn) return;
+  const tr = btn.closest("tr");
+  const idx = state.employees.findIndex(x => x.id === tr.dataset.id);
+  if (idx < 0) return;
+  const emp = state.employees[idx];
+  if (btn.dataset.act === "del") {
+    const who = esc(emp.name.trim()) || "this employee";
+    const ok = await askConfirm({
+      title: "Remove " + (emp.name.trim() || "this employee") + "?",
+      body: "<b>" + who + "</b> comes out of the totals right away. " +
+            "To keep the record but stop counting them, use the ◉ toggle instead.",
+      yes: "Remove", danger: true
+    });
+    if (!ok) return;
+    state.employees.splice(idx, 1);
+  } else {
+    emp.active = !emp.active;
+  }
+  renderEmployees(); renderRates(); renderSlip(); queueSave();
+});
+
+$("#addBtn").addEventListener("click", () => {
+  state.employees.push({ id:newId(), name:"", role:state.roles[1].id,
+    wages:0, deds:0, active:true });
+  sortEmployees();
+  renderEmployees(); renderRates(); renderSlip(); queueSave();
+  const rows = $("#empBody").querySelectorAll("tr");
+  const last = rows[rows.length - 1];
+  if (last) last.querySelector('[data-f="name"]').focus();
+});
+
+/* The list stays in alphabetical order. Someone still being typed in has no
+   name yet, so blanks sit at the bottom until there is something to sort on. */
+function sortEmployees(){
+  state.employees.sort((a, b) => {
+    const an = (a.name || "").trim(), bn = (b.name || "").trim();
+    if (!an && !bn) return 0;
+    if (!an) return 1;
+    if (!bn) return -1;
+    return an.localeCompare(bn, "en", { sensitivity:"base" });
+  });
+}
+function orderKey(){ return state.employees.map(e => e.id).join("|"); }
+
+/* ============================ confirm dialog ============================ */
+const pctText = n => String(Math.round(num(n) * 10000) / 10000);
+let confirmResolve = null;
+
+function askConfirm(opts){
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    $("#confirmTitle").textContent = opts.title;
+    $("#confirmBody").innerHTML = opts.body;
+    const yes = $("#confirmYes");
+    yes.textContent = opts.yes || "Confirm";
+    yes.className = opts.danger ? "btn-danger" : "btn-accent";
+    $("#confirmModal").hidden = false;
+    setTimeout(() => yes.focus(), 30);
+  });
+}
+function closeConfirm(val){
+  if (confirmResolve === null) return;
+  $("#confirmModal").hidden = true;
+  const r = confirmResolve;
+  confirmResolve = null;
+  r(val);
+}
+$("#confirmYes").addEventListener("click", () => closeConfirm(true));
+$("#confirmNo").addEventListener("click", () => closeConfirm(false));
+$("#confirmModal").addEventListener("click", ev => {
+  if (ev.target === $("#confirmModal")) closeConfirm(false);
+});
+
+/* ============================ render: rates ============================ */
+function renderRates(){
+  const wrap = $("#rateList");
+  wrap.innerHTML = "";
+  state.roles.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "raterow";
+    div.dataset.id = r.id;
+    div.innerHTML =
+      '<div class="rname">' + esc(r.name) +
+        "<small>" + countIn(r.id) + "</small></div>" +
+      '<input class="codeinput" data-f="code" value="' + esc(r.code) +
+        '" title="Class code" aria-label="' + esc(r.name) + ' class code">' +
+      '<div class="pctwrap"><input data-f="pct" inputmode="decimal" value="' +
+        pctText(r.pct) + '" aria-label="' + esc(r.name) +
+        ' premium rate"><span>%</span></div>';
+    wrap.appendChild(div);
+  });
+  const jib = document.createElement("div");
+  jib.className = "raterow jibrow";
+  jib.dataset.id = "__JIB";
+  jib.innerHTML =
+    '<div class="rname">JIB<small>Percent of total gross wages, all classes</small></div>' +
+    "<div></div>" +
+    '<div class="pctwrap"><input data-f="pct" inputmode="decimal" value="' +
+      pctText(state.jibPct) + '" aria-label="JIB rate"><span>%</span></div>';
+  wrap.appendChild(jib);
+}
+function countIn(roleId){
+  const n = state.employees.filter(e => e.active && e.role === roleId).length;
+  return n === 1 ? "1 employee" : n + " employees";
+}
+
+/* class codes update live; percentages require confirmation on commit */
+$("#rateList").addEventListener("input", ev => {
+  const t = ev.target;
+  if (!t.dataset || t.dataset.f !== "code") return;
+  roleById(t.closest(".raterow").dataset.id).code = t.value.toUpperCase();
+  renderSlip(); queueSave();
+});
+$("#rateList").addEventListener("focusin", ev => {
+  const t = ev.target;
+  if (t.dataset && t.dataset.f === "pct") t.dataset.prev = t.value;
+});
+$("#rateList").addEventListener("change", async ev => {
+  const t = ev.target;
+  if (!t.dataset || t.dataset.f !== "pct") return;
+  const rowId = t.closest(".raterow").dataset.id;
+  const isJib = rowId === "__JIB";
+  const label = isJib ? "JIB" : roleById(rowId).name;
+  const oldVal = num(t.dataset.prev !== undefined ? t.dataset.prev
+                     : (isJib ? state.jibPct : roleById(rowId).pct));
+  const newVal = num(t.value);
+  if (Math.abs(newVal - oldVal) < 1e-9){ t.value = pctText(oldVal); return; }
+
+  const basis = isJib ? "the JIB amount" : "every " + esc(label) + " premium";
+  const ok = await askConfirm({
+    title: "Change the " + label + " rate?",
+    body: "This moves it from <b>" + pctText(oldVal) + "%</b> to <b>" + pctText(newVal) +
+          "%</b> and recalculates " + basis +
+          " from here on. Periods you have already saved keep their original figures.",
+    yes: "Change rate"
+  });
+  if (!ok){ t.value = pctText(oldVal); return; }
+  if (isJib) state.jibPct = newVal; else roleById(rowId).pct = newVal;
+  t.value = pctText(newVal);
+  t.dataset.prev = t.value;
+  renderSlip(); queueSave();
+  toast(label + " rate is now " + pctText(newVal) + "%.");
+});
+
+/* ============================ render: slip ============================ */
+function renderSlip(){
+  const c = compute();
+  const box = $("#slipClasses");
+  box.innerHTML = "";
+  state.roles.forEach(r => {
+    const b = c.byRole[r.id];
+    const div = document.createElement("div");
+    div.className = "sline" + (b.owed === 0 ? " zero" : "");
+    div.innerHTML =
+      '<span class="lbl"><b>' + esc(r.name) + "</b><em>" + esc(r.code) + "</em></span>" +
+      '<span class="amt">' + money(b.owed) +
+        '<span class="tiny">' + money(b.tgw) + " × " + num(r.pct) + "%</span></span>";
+    box.appendChild(div);
+  });
+  $("#jibPctTag").textContent = pctText(c.jibPct) + "%";
+  $("#jibAmt").innerHTML = money(c.jib) + '<span class="tiny">' + pctText(c.jibPct) +
+    "% × " + money(c.grossAll) + " gross</span>";
+  $("#jibLine").classList.toggle("zero", c.jib === 0);
+  $("#grandJib").textContent  = money(c.jibTotal);
+  $("#grandJibM").textContent = money(c.jibTotal);
+  $("#slipPeriod").textContent = state.period.trim() || "No period entered";
+  state.roles.forEach(r => {
+    const row = document.querySelector('.raterow[data-id="' + r.id + '"] small');
+    if (row) row.textContent = countIn(r.id);
+  });
+}
+
+/* ============================ inputs: period, jib, 401k ============================ */
+$("#period").addEventListener("input", e => {
+  state.period = e.target.value; renderSlip(); queueSave();
+});
+$("#k401").addEventListener("input", e => {
+  state.k401 = num(e.target.value); renderSlip(); queueSave();
+});
+$("#k401").addEventListener("blur", e => { e.target.value = fix2(e.target.value); });
+
+/* ============================ history ============================ */
+function renderHistory(){
+  const list = $("#histList");
+  list.innerHTML = "";
+  $("#histCount").textContent = state.history.length;
+  if (!state.history.length) {
+    list.innerHTML = '<div class="empty">Nothing saved yet. ' +
+      'Fill in a period and choose “Save period” to keep a copy of the totals.</div>';
+    return;
+  }
+  state.history.forEach(h => {
+    const row = document.createElement("div");
+    row.className = "histrow";
+    row.innerHTML =
+      '<div class="hname">' + esc(h.label || "(untitled period)") +
+        '<div class="hdate">' + esc(h.saved) + "</div></div>" +
+      '<div class="hamt">' + money(h.jibTotal !== undefined ? h.jibTotal : 0) + "</div>" +
+      '<button class="iconbtn del" data-h="' + h.id + '" title="Delete this record">✕</button>';
+    list.appendChild(row);
+  });
+}
+$("#histList").addEventListener("click", ev => {
+  const btn = ev.target.closest("button[data-h]");
+  if (!btn) return;
+  state.history = state.history.filter(h => h.id !== btn.dataset.h);
+  renderHistory(); queueSave();
+});
+
+function savePeriod(){
+  const c = compute();
+  state.history.unshift({
+    id: newId(),
+    label: state.period.trim(),
+    saved: new Date().toLocaleDateString("en-US",
+      { month:"short", day:"numeric", year:"numeric" }),
+    premiums: c.premiums,
+    grossAll: c.grossAll,
+    jibPct: c.jibPct,
+    jib: c.jib,
+    k401: c.k401,
+    jibTotal: c.jibTotal,
+    lines: state.roles.map(r => ({
+      name:r.name, code:r.code, pct:num(r.pct),
+      tgw:c.byRole[r.id].tgw, owed:c.byRole[r.id].owed
+    }))
+  });
+  renderHistory(); queueSave();
+  $("#histWrap").open = true;
+  setStatus("Period saved");
+}
+$("#saveBtn").addEventListener("click", savePeriod);
+$("#saveBtnM").addEventListener("click", savePeriod);
+
+/* ============================ clear / csv / backup ============================ */
+$("#clearBtn").addEventListener("click", async () => {
+  const ok = await askConfirm({
+    title: "Start a new pay period?",
+    body: "Wages, deductions and the 401K amount go back to zero. " +
+          "Employees, roles and every rate stay exactly as they are.",
+    yes: "Clear amounts"
+  });
+  if (!ok) return;
+  state.employees.forEach(e => { e.wages = 0; e.deds = 0; });
+  state.k401 = 0; state.period = "";
+  $("#k401").value = "0.00"; $("#period").value = "";
+  renderEmployees(); renderSlip(); queueSave();
+  toast("Cleared. Ready for the next period.");
+});
+
+function download(filename, text, mime){
+  const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+
+$("#csvBtn").addEventListener("click", () => {
+  const c = compute();
+  const rows = [];
+  rows.push(["EESISP Remittance", state.period.trim()].map(q).join(","));
+  rows.push([]);
+  rows.push(["Employee","Role","Gross wages","Deductions","TGW","Status"].map(q).join(","));
+  state.employees.forEach(e => rows.push([
+    e.name, roleById(e.role).name, fix2(e.wages), fix2(e.deds),
+    fix2(num(e.wages) - num(e.deds)), e.active ? "Active" : "Inactive"
+  ].map(q).join(",")));
+  rows.push([]);
+  rows.push(["Class","Code","Employees","Gross wages","Deductions","TGW","Rate %","Owed"]
+    .map(q).join(","));
+  state.roles.forEach(r => {
+    const b = c.byRole[r.id];
+    rows.push([r.name, r.code, b.count, fix2(b.wages), fix2(b.deds), fix2(b.tgw),
+      num(r.pct), fix2(b.owed)].map(q).join(","));
+  });
+  rows.push([]);
+  rows.push(["Total gross wages", fix2(c.grossAll)].map(q).join(","));
+  rows.push(["JIB rate %", pctText(c.jibPct)].map(q).join(","));
+  rows.push(["JIB", fix2(c.jib)].map(q).join(","));
+  rows.push(["401K C&L", fix2(c.k401)].map(q).join(","));
+  rows.push(["JIB + 401K C&L TOTAL", fix2(c.jibTotal)].map(q).join(","));
+  const tag = (state.period.trim() || new Date().toISOString().slice(0,10))
+    .replace(/[^a-z0-9]+/gi, "-");
+  download("eesisp-" + tag + ".csv", rows.join("\r\n"), "text/csv;charset=utf-8");
+});
+
+$("#printBtn").addEventListener("click", () => window.print());
+
+$("#backupBtn").addEventListener("click", () => {
+  download("eesisp-backup-" + new Date().toISOString().slice(0,10) + ".json",
+    JSON.stringify(state, null, 2), "application/json");
+});
+
+$("#restoreBtn").addEventListener("click", () => {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/json,.json";
+  inp.addEventListener("change", () => {
+    const file = inp.files && inp.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result));
+        if (!data || !Array.isArray(data.employees) || !Array.isArray(data.roles)) {
+          alert("That file isn't an EESISP backup. Pick a file saved with Backup.");
+          return;
+        }
+        askConfirm({
+          title: "Restore this backup?",
+          body: "Everything on screen is replaced with the contents of that file.",
+          yes: "Restore", danger: true
+        }).then(ok => {
+          if (!ok) return;
+          state = Object.assign(freshState(), data);
+          boot(true);
+        });
+      } catch (err) {
+        alert("That file couldn't be read. Pick a file saved with Backup.");
+      }
+    };
+    reader.readAsText(file);
+  });
+  inp.click();
+});
+
+/* ============================ note ============================ */
+/* ============================ toast ============================ */
+let toastTimer = null;
+function toast(msg){
+  const el = $("#toast");
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 4200);
+}
+
+/* ============================ excel paste ============================ */
+function parseTSV(text){
+  const s = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const rows = []; let row = [], cell = "", quoted = false;
+  for (let i = 0; i < s.length; i++){
+    const c = s[i];
+    if (quoted){
+      if (c === '"'){ if (s[i+1] === '"'){ cell += '"'; i++; } else quoted = false; }
+      else cell += c;
+    }
+    else if (c === '"' && cell === "") quoted = true;
+    else if (c === "\t"){ row.push(cell); cell = ""; }
+    else if (c === "\n"){ row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  row.push(cell); rows.push(row);
+  return rows.filter(r => r.some(x => String(x).trim() !== ""));
+}
+
+function parseRole(txt){
+  const s = String(txt == null ? "" : txt).trim().toLowerCase();
+  if (!s) return null;
+  const hit = state.roles.find(r =>
+    r.id.toLowerCase() === s || r.name.toLowerCase() === s || r.code.toLowerCase() === s);
+  if (hit) return hit.id;
+  if (/^(wh|ware)/.test(s)) return "WAREHOUSE";
+  if (/^(dr|driv|cdl)/.test(s)) return "DRIVERS";
+  if (/^(sal|sls|inside|outside)/.test(s)) return "SALES";
+  if (/^(adm|off|acct|clerk)/.test(s)) return "ADMIN";
+  return null;
+}
+
+const normName = s => String(s == null ? "" : s)
+  .toLowerCase().replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
+function tokenKey(s){
+  return normName(s).split(" ").filter(t => t.length > 1).sort().join(" ");
+}
+function surname(s){
+  const raw = String(s == null ? "" : s).trim();
+  if (raw.indexOf(",") > -1) return normName(raw.split(",")[0]);
+  const p = normName(raw).split(" ").filter(Boolean);
+  return p.length ? p[p.length - 1] : "";
+}
+function buildMatcher(){
+  const exact = new Map(), token = new Map(), sur = new Map();
+  const push = (m, k, id) => { if (!k) return; if (!m.has(k)) m.set(k, []); m.get(k).push(id); };
+  state.employees.forEach(e => {
+    push(exact, normName(e.name), e.id);
+    push(token, tokenKey(e.name), e.id);
+    push(sur,   surname(e.name),  e.id);
+  });
+  return raw => {
+    if (!normName(raw)) return null;
+    const tries = [[exact, normName(raw)], [token, tokenKey(raw)], [sur, surname(raw)]];
+    for (const [map, key] of tries){
+      const hit = map.get(key);
+      if (hit && hit.length === 1) return hit[0];
+    }
+    return null;
+  };
+}
+
+let importGrid = [];
+let importRows = [];
+
+function openImport(prefill){
+  $("#importModal").hidden = false;
+  $("#pasteBox").value = prefill || "";
+  $("#zeroRest").checked = false;
+  if (prefill) readPaste(); else resetImportUI();
+  $("#pasteBox").focus();
+}
+function resetImportUI(){
+  importGrid = []; importRows = [];
+  $("#mapRow").hidden = true;
+  $("#previewWrap").hidden = true;
+  $("#zeroLine").hidden = true;
+  $("#parseMsg").hidden = true;
+  $("#importApply").disabled = true;
+  $("#importSummary").textContent = "";
+}
+function closeImport(){ $("#importModal").hidden = true; resetImportUI(); }
+
+const hasDigit = c => /[0-9]/.test(String(c));
+function colLabel(i, grid, header){
+  const head = header ? String(grid[0][i] || "").trim() : "";
+  const sample = String((grid[header ? 1 : 0] || [])[i] || "").trim();
+  const tail = head || sample;
+  return "Column " + (i + 1) + (tail ? " · " + tail.slice(0, 18) : "");
+}
+
+function readPaste(){
+  const grid = parseTSV($("#pasteBox").value);
+  if (grid.length < 1 || !$("#pasteBox").value.trim()){ resetImportUI(); return; }
+  importGrid = grid;
+  const first = grid[0].map(c => String(c).trim());
+  const guessHeader = grid.length > 1 && !first.some(hasDigit) &&
+    first.some(c => /name|employee|wage|gross|deduct|role|class|earn|pay/i.test(c));
+  $("#hasHeader").checked = guessHeader;
+  guessColumns();
+  buildPreview();
+}
+
+function guessColumns(){
+  const grid = importGrid;
+  const header = $("#hasHeader").checked;
+  const data = header ? grid.slice(1) : grid;
+  const colCount = Math.max.apply(null, grid.map(r => r.length));
+  const idx = { name:-1, wages:-1, deds:-1, role:-1 };
+
+  if (header){
+    grid[0].forEach((h, i) => {
+      const s = String(h).toLowerCase();
+      if (idx.name  < 0 && /name|employee|worker/.test(s)) idx.name = i;
+      if (idx.deds  < 0 && /ded|deduct|pre.?tax/.test(s)) idx.deds = i;
+      if (idx.wages < 0 && /wage|gross|earn|salary|amount/.test(s)) idx.wages = i;
+      if (idx.role  < 0 && /role|class|dept|depart|division|job|type/.test(s)) idx.role = i;
+    });
+  }
+  const numeric = [];
+  for (let c = 0; c < colCount; c++){
+    const vals = data.map(r => String(r[c] == null ? "" : r[c]).trim()).filter(v => v !== "");
+    if (!vals.length) continue;
+    const n = vals.filter(v => hasDigit(v) && !/[a-z]{2}/i.test(v)).length;
+    if (n >= vals.length * 0.7) numeric.push(c);
+    else if (idx.name < 0) idx.name = c;
+  }
+  const free = numeric.filter(c => c !== idx.wages && c !== idx.deds);
+  if (idx.wages < 0 && free.length) idx.wages = free.shift();
+  if (idx.deds  < 0 && free.length) idx.deds  = free.shift();
+  if (idx.deds === idx.wages) idx.deds = -1;
+
+  [["colName","name"], ["colWages","wages"], ["colDeds","deds"], ["colRole","role"]]
+    .forEach(([id, key]) => {
+      const sel = $("#" + id);
+      let html = '<option value="-1">— none —</option>';
+      for (let c = 0; c < colCount; c++)
+        html += '<option value="' + c + '"' + (idx[key] === c ? " selected" : "") + ">" +
+                esc(colLabel(c, grid, header)) + "</option>";
+      sel.innerHTML = html;
+    });
+  $("#mapRow").hidden = false;
+}
+
+function buildPreview(){
+  const grid = importGrid;
+  if (!grid.length) return;
+  const header = $("#hasHeader").checked;
+  const data = header ? grid.slice(1) : grid;
+  const pick = id => parseInt($("#" + id).value, 10);
+  const cName = pick("colName"), cW = pick("colWages"), cD = pick("colDeds"), cR = pick("colRole");
+  const match = buildMatcher();
+
+  importRows = data.map(r => {
+    const cell = i => (i >= 0 ? String(r[i] == null ? "" : r[i]).trim() : "");
+    const nm = cell(cName);
+    return {
+      name: nm,
+      wages: cW >= 0 ? num(cell(cW)) : null,
+      deds:  cD >= 0 ? num(cell(cD)) : null,
+      role:  cR >= 0 ? parseRole(cell(cR)) : null,
+      target: nm ? (match(nm) || "__new") : "__skip"
+    };
+  }).filter(r => r.name || r.wages !== null);
+
+  const body = $("#previewBody");
+  body.innerHTML = "";
+  importRows.forEach((r, i) => {
+    const opts = ['<option value="__new">Add as new employee</option>',
+                  '<option value="__skip">Skip this row</option>']
+      .concat(state.employees.map(e =>
+        '<option value="' + e.id + '">' + esc(e.name.trim() || "(unnamed)") + "</option>"));
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td class="pname">' + esc(r.name || "—") + "</td>" +
+      '<td class="pnum">' + (r.wages === null ? "—" : money(r.wages)) + "</td>" +
+      '<td class="pnum">' + (r.deds  === null ? "—" : money(r.deds))  + "</td>" +
+      '<td><select data-i="' + i + '">' + opts.join("") + "</select></td>";
+    const sel = tr.querySelector("select");
+    sel.value = r.target;
+    body.appendChild(tr);
+  });
+
+  $("#previewWrap").hidden = importRows.length === 0;
+  $("#zeroLine").hidden = importRows.length === 0;
+  $("#importApply").disabled = importRows.length === 0;
+  if (!importRows.length){
+    $("#parseMsg").hidden = false;
+    $("#parseMsg").textContent =
+      "Nothing usable in that paste. Check the column pickers above.";
+  } else {
+    $("#parseMsg").hidden = true;
+  }
+  updateImportSummary();
+}
+
+function updateImportSummary(){
+  let upd = 0, add = 0, skip = 0;
+  importRows.forEach(r => {
+    if (r.target === "__skip") skip++;
+    else if (r.target === "__new") add++;
+    else upd++;
+  });
+  const bits = [];
+  if (upd)  bits.push(upd + " matched");
+  if (add)  bits.push(add + " new");
+  if (skip) bits.push(skip + " skipped");
+  $("#importSummary").textContent = bits.join(" · ");
+}
+
+$("#previewBody").addEventListener("change", ev => {
+  const sel = ev.target.closest("select[data-i]");
+  if (!sel) return;
+  importRows[parseInt(sel.dataset.i, 10)].target = sel.value;
+  updateImportSummary();
+});
+
+$("#pasteBox").addEventListener("input", readPaste);
+$("#pasteBox").addEventListener("paste", () => setTimeout(readPaste, 0));
+["colName","colWages","colDeds","colRole"].forEach(id =>
+  $("#" + id).addEventListener("change", buildPreview));
+$("#hasHeader").addEventListener("change", () => { guessColumns(); buildPreview(); });
+
+$("#importApply").addEventListener("click", () => {
+  let updated = 0, added = 0;
+  const touched = new Set();
+  importRows.forEach(r => {
+    if (r.target === "__skip") return;
+    if (r.target === "__new"){
+      const e = { id:newId(), name:r.name, role:r.role || state.roles[1].id,
+                  wages:r.wages === null ? 0 : r.wages,
+                  deds:r.deds === null ? 0 : r.deds, active:true };
+      state.employees.push(e); touched.add(e.id); added++;
+    } else {
+      const e = state.employees.find(x => x.id === r.target);
+      if (!e) return;
+      if (r.wages !== null) e.wages = r.wages;
+      if (r.deds  !== null) e.deds  = r.deds;
+      if (r.role) e.role = r.role;
+      touched.add(e.id); updated++;
+    }
+  });
+  let zeroed = 0;
+  if ($("#zeroRest").checked){
+    state.employees.forEach(e => {
+      if (!touched.has(e.id) && (num(e.wages) || num(e.deds))){
+        e.wages = 0; e.deds = 0; zeroed++;
+      }
+    });
+  }
+  closeImport();
+  sortEmployees();
+  renderEmployees(); renderRates(); renderSlip(); queueSave();
+  const bits = [];
+  if (updated) bits.push("updated " + updated);
+  if (added)   bits.push("added " + added);
+  if (zeroed)  bits.push("zeroed " + zeroed);
+  toast(bits.length ? "Imported — " + bits.join(", ") + "." : "Nothing changed.");
+});
+
+$("#importBtn").addEventListener("click", () => openImport(""));
+$("#importClose").addEventListener("click", closeImport);
+$("#importCancel").addEventListener("click", closeImport);
+$("#importModal").addEventListener("click", ev => {
+  if (ev.target === $("#importModal")) closeImport();
+});
+document.addEventListener("keydown", ev => {
+  if (ev.key !== "Escape") return;
+  if (!$("#confirmModal").hidden) closeConfirm(false);
+  else if (!$("#importModal").hidden) closeImport();
+});
+
+/* --- paste straight into the grid --- */
+const GRID_COLS = ["name", "role", "wages", "deds"];
+$("#empBody").addEventListener("paste", ev => {
+  const t = ev.target;
+  const f = t.dataset && t.dataset.f;
+  if (!f) return;
+  const cd = ev.clipboardData || window.clipboardData;
+  if (!cd) return;
+  const grid = parseTSV(cd.getData("text"));
+  if (!grid.length) return;
+  if (grid.length === 1 && grid[0].length === 1) return;   // one value: let it paste normally
+  ev.preventDefault();
+  const startRow = Array.prototype.indexOf.call($("#empBody").children, t.closest("tr"));
+  const startCol = GRID_COLS.indexOf(f);
+  let filled = 0, overflow = 0;
+  grid.forEach((row, ri) => {
+    const emp = state.employees[startRow + ri];
+    if (!emp){ overflow++; return; }
+    row.forEach((cellVal, ci) => {
+      const col = GRID_COLS[startCol + ci];
+      if (!col) return;
+      const v = String(cellVal == null ? "" : cellVal).trim();
+      if (col === "name"){ if (v){ emp.name = v; filled++; } }
+      else if (col === "role"){ const r = parseRole(v); if (r){ emp.role = r; filled++; } }
+      else { emp[col] = num(v); filled++; }
+    });
+  });
+  sortEmployees();
+  renderEmployees(); renderRates(); renderSlip(); queueSave();
+  toast(overflow
+    ? "Filled " + filled + " cells. " + overflow + " pasted row" + (overflow > 1 ? "s" : "") +
+      " had no employee to land on — add them, or use Paste from Excel to match by name."
+    : "Filled " + filled + " cells from your spreadsheet.");
+});
+
+/* --- paste anywhere on the page opens the importer --- */
+document.addEventListener("paste", ev => {
+  const tag = (ev.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return;
+  if (!$("#importModal").hidden) return;
+  const cd = ev.clipboardData || window.clipboardData;
+  if (!cd) return;
+  const text = cd.getData("text");
+  if (!text || text.indexOf("\t") < 0) return;
+  ev.preventDefault();
+  openImport(text);
+});
+
+/* ============================ boot ============================ */
+function boot(fromRestore){
+  sortEmployees();
+  $("#period").value = state.period || "";
+  $("#k401").value = fix2(state.k401);
+  renderEmployees();
+  renderRates();
+  renderHistory();
+  renderSlip();
+  if (fromRestore) { persist(); setStatus("Backup restored"); }
+}
+
+(function init(){
+  const saved = restore();
+  state = saved ? Object.assign(freshState(), saved) : freshState();
+  if (!Array.isArray(state.roles) || !state.roles.length) state.roles = DEFAULT_ROLES.map(r=>({...r}));
+  if (!Array.isArray(state.employees)) state.employees = [];
+  if (!Array.isArray(state.history)) state.history = [];
+  boot(false);
+  setStatus("Ready");
+})();
+</script>
